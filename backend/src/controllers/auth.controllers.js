@@ -43,6 +43,7 @@ export const signup = async (req,res)=> {
         res.status(500).json({message:"Internal Server Error"})
     }
 }
+
 export const login =  async (req,res)=> {
     const {email,password} = req.body
     try {
@@ -74,6 +75,7 @@ export const login =  async (req,res)=> {
         })
     } 
 }
+
 export const logout = async(req,res)=> {
     try {
         res.cookie("jwt","",{maxAge:0})
@@ -86,7 +88,7 @@ export const logout = async(req,res)=> {
 
 export const updateProfile = async (req,res) => {
     try {
-        const {profilePic} = req.body;
+        const {_id, profilePic} = req.body;
         const userId=req.user._id
         if(!profilePic) {
             return res.status(400).json({message: "Profile pic is required"})
@@ -94,6 +96,7 @@ export const updateProfile = async (req,res) => {
 
         const uploadResponse = await cloudinary.uploader.upload(profilePic);
         const updateUser = await User.findByIdAndUpdate(
+             _id,  
             { profilePic: uploadResponse.secure_url},
             { new: true}
         );
@@ -103,7 +106,6 @@ export const updateProfile = async (req,res) => {
         res.status(500).json({message : "Internal server error "});
     }
 };
-
 
 export const checkAuth = (req,res) => {
     try {
