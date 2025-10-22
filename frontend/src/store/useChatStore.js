@@ -1,6 +1,8 @@
 import {create } from "zustand"
 import toast from "react-hot-toast"
 import {axiosInstance} from "../lib/axios";
+import { useAuthStore } from "./useAuthStore";
+import { use } from "react";
 
 export const useChatStore = create ((set,get)=> ({
     messages : [],
@@ -25,7 +27,7 @@ export const useChatStore = create ((set,get)=> ({
         set({isMessagesLoading: true});
         try {
             const res = await axiosInstance.get(`/messages/${userId}`);
-            set({message: res.data })
+            set({messages: res.data })
         } catch (error) {
             toast.error(error.response.data.message);
         } finally{
@@ -42,8 +44,29 @@ export const useChatStore = create ((set,get)=> ({
         }
     },
 
-    //? todo optimise this with webs
-    setSelectedUser: (selectedUser) => set({ selectedUser }),
+    subscribeToMessages: () => {
+        const {selectedUser} = get();
+        if(!selectedUser) return;
 
+        const socket = useAuthStore.getState().socket;
+        if (!socket) {
+            console.log("Socket not connected");
+            return;
+        }
+        socket.on("newMessage", (newMessage) => {
+            if(newMessage.senderId !== selectedUser._id) return;
+            const {messages} = get();
+            set({ messages: [...messages, newMessage] });
+            console.log("New message received:", newMessage);
+        });
+    },
 
-}))
+    unsubscribeFromMessages: () => {
+        const socket = useAuthStore.getState().socket;
+        if (socket) {
+            socket.off("newMessage");
+        }
+    },
+
+   setSelectedUser: (selectedUser) => set({ selectedUser })
+}));
