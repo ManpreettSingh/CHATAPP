@@ -6,10 +6,9 @@ const router = express.Router();
 
 // Specific routes first
 router.get("/users", protectRoute, getUsersForSidebar)
-
 // Dynamic routes last
 router.get("/:id", protectRoute, getMessages)
 router.post("/send/:id", protectRoute, sendMessages)
 
 
-export default router;
+export default router; 

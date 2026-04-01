@@ -16,7 +16,6 @@ export const getUsersForSidebar = async (req,res) => {
     }
 }; 
 
-
 export const getMessages = async (req, res) => {
   try {
     const { id: userToChatId } = req.params;
@@ -69,4 +68,4 @@ export const sendMessages = async ( req,res) =>{
         
     }
 }
- 
+

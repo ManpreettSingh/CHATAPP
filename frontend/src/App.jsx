@@ -12,15 +12,33 @@ import { useEffect } from "react";
 import {Loader} from "lucide-react"
 import {Toaster} from "react-hot-toast"
 import { useThemeStore } from "./store/useThemeStore";
+import { useChatStore } from "./store/useChatStore";
 
 function App() {
   const { authUser, checkAuth , isCheckingAuth ,onlineUsers } = useAuthStore();
+  const { listenForMessages, stopListeningForMessages } = useChatStore();
 
   console.log({ onlineUsers })
 
   useEffect(()=>{
     checkAuth()
   },[checkAuth]);
+
+  // Request notification permission
+  useEffect(() => {
+    if (authUser && "Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, [authUser]);
+
+  // Start listening for messages globally when user is authenticated
+  useEffect(() => {
+    if (authUser) {
+      listenForMessages();
+      return () => stopListeningForMessages();
+    }
+  }, [authUser, listenForMessages, stopListeningForMessages]);
+
   const {theme} = useThemeStore()
   console.log({authUser});
 

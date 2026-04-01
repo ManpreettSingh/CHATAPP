@@ -1,10 +1,12 @@
 import React from 'react'
 import { useAuthStore } from '../store/useAuthStore'
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, MessageSquare, Settings, User } from 'lucide-react';
 
 const Navbar = () => {
   const {logout, authUser} = useAuthStore();
+  const location = useLocation();
+  const navigate = useNavigate();
 
 
 
@@ -25,8 +27,25 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link
-              to={"/settings"}
+            {authUser && (
+              <div className="flex items-center gap-2 mr-2">
+                <img 
+                  src={authUser.profilePic || "/avatar.png"} 
+                  alt="Profile" 
+                  className="size-8 rounded-full object-cover"
+                />
+                <span className="hidden sm:inline font-medium">{authUser.fullName}</span>
+              </div>
+            )}
+
+            <button
+              onClick={() => {
+                if (location.pathname === '/settings') {
+                  navigate('/');
+                } else {
+                  navigate('/settings');
+                }
+              }}
               className={`
               btn btn-sm gap-2 transition-colors
               
@@ -34,17 +53,26 @@ const Navbar = () => {
             >
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">Settings</span>
-            </Link>
+            </button>
 
             {authUser && (
               <>
-                <Link to={"/profile"} className={`btn btn-sm gap-2`}>
+                <button 
+                  onClick={() => {
+                    if (location.pathname === '/profile') {
+                      navigate('/');
+                    } else {
+                      navigate('/profile');
+                    }
+                  }}
+                  className={`btn btn-sm gap-2`}
+                >
                   <User className="size-5" />
                   <span className="hidden sm:inline">Profile</span>
-                </Link>
+                </button>
 
-                <button className="flex gap-2 items-center" onClick={logout}>
-                  <LogOut className="size-5" />
+                <button className="btn btn-sm gap-2" onClick={logout}>
+                  <LogOut className="w-4 h-4" />
                   <span className="hidden sm:inline">Logout</span>
                 </button>
               </>
