@@ -47,46 +47,96 @@ Useful queries:
 
 ## 6. Indexing
 Indexing improves speed for large chat data.
-Important indexes I will add:
-- `users.email` (unique)
-- `users.fullName` (search in sidebar)
-- Compound index on messages: `(senderId, receiverId, createdAt)`
-- Text index on `messages.text` for message search
+
+Indexes added in this project:
+
+**`message.model.js`**
+```js
+// Compound index: speeds up fetching messages between two users sorted by time
+messageSchema.index({ senderId: 1, receiverId: 1, createdAt: -1 });
+
+// Text index: enables full-text search on message content
+messageSchema.index({ text: "text" });
+```
+
+**`user.model.js`**
+```js
+// Text index: enables searching users by name in the sidebar
+userSchema.index({ fullName: "text" });
+```
 
 Without indexes, MongoDB scans many documents. With indexes, query time is much faster.
 
-## Search Feature Example (for teacher demo)
-I can add **Search Message in Chat**:
-- User types a keyword in chat search box.
-- Backend runs indexed query on `messages.text`.
-- Results show only matching messages in that conversation.
+## 7. Aggregation (Implemented)
+Aggregation creates summary reports from many message documents using a pipeline of stages.
+
+### API Endpoint
+```
+GET /api/messages/stats/:userId?days=7
+```
+Returns analytics for a conversation over the last N days (default 7).
+
+### Pipeline used in `getChatStats` controller
+
+```js
+Message.aggregate([
+    // Stage 1: $match – filter messages for this conversation in the date range
+    { $match: { $or: [...], createdAt: { $gte: since } } },
+
+    // Stage 2: $facet – run multiple sub-pipelines in one query
+    {
+        $facet: {
+            // Sub-pipeline A: messages grouped by sender (who sent more)
+            senderSplit: [
+                { $group: { _id: "$senderId", totalMessages: { $sum: 1 }, ... } }
+            ],
+            // Sub-pipeline B: daily message count trend, sorted by date
+            dailyTrend: [
+                { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: { $sum: 1 } } },
+                { $sort: { _id: 1 } }
+            ],
+            // Sub-pipeline C: grand totals
+            totals: [
+                { $group: { _id: null, totalMessages: { $sum: 1 }, textMessages: { $sum: ... }, imageMessages: { $sum: ... } } }
+            ]
+        }
+    }
+])
+```
+
+**Stages used:**
+- `$match` → filter by conversation participants and date range
+- `$group` → count total, text, and image messages per sender and per day
+- `$sort` → sort daily data chronologically
+- `$facet` → return multiple reports (senderSplit, dailyTrend, totals) in one query
+
+**Why aggregation is useful:**
+- Gives analytics, not just raw CRUD data.
+- Faster and cleaner than doing multiple queries + loops in Node.js.
+- Demonstrates data engineering concepts (pipeline, grouping, faceting) in a real project.
+
+## 8. Text Search (Implemented)
+Using the text index on `messages.text`, users can search for keywords in a conversation.
+
+### API Endpoint
+```
+GET /api/messages/search/:userId?q=keyword
+```
+
+### Query used in `searchMessages` controller
+```js
+Message.find({
+    $and: [
+        { $or: [{ senderId: myId, receiverId: otherUserId }, ...] },
+        { $text: { $search: q } }
+    ]
+}).sort({ createdAt: -1 })
+```
 
 This feature demonstrates:
-- text search query
-- indexing
-- real-world MongoDB optimization
-
-## 7. Aggregation (How I will add it)
-Aggregation means creating summary reports from many message documents.
-
-In this project, I will add one analytics API for each chat conversation.
-That API will use MongoDB aggregation pipeline.
-
-Main stages I will use:
-- `$match` -> filter messages of two users and date range (example: last 7 days)
-- `$group` -> count total messages, image messages, and text messages
-- `$sort` -> sort daily data by date
-- `$facet` -> return multiple reports in one query
-
-Reports I can show to mam:
-- Total messages in selected date range
-- Daily message count trend
-- Sender wise split (how many sent by me vs other user)
-
-Why aggregation is useful:
-- It gives analytics, not just normal CRUD data.
-- It is faster and cleaner than doing many loops in Node.js.
-- It shows data engineering concepts in real project use.
+- Text search query with `$text` / `$search`
+- Text indexing in action
+- Real-world MongoDB query optimization
 
 ## Conclusion
 This project is not only a chat app UI. It demonstrates core MongoDB concepts:
@@ -95,5 +145,7 @@ This project is not only a chat app UI. It demonstrates core MongoDB concepts:
 - nested documents
 - update operators
 - arrays
-- indexing and search optimization
-- aggregation for chat analytics
+- indexing (compound + text) for query optimization
+- aggregation pipeline for chat analytics
+- full-text search using text indexes
+
