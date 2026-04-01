@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema(
     }
 );
 
+// Text index: enables searching users by name in the sidebar
+userSchema.index({ fullName: "text" });
+
 const User = mongoose.model("User", userSchema);
 
 export default User;
+ 

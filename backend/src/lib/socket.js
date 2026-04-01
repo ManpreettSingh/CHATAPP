@@ -25,15 +25,12 @@ io.on("connection", (socket) => {
     const userId = socket.handshake.query.userId;
     if(userId) {
         console.log("User connected:", userId);
-        userSocketMap[userId] = socket.id;
-        
-        // Emit to all clients immediately when a new user connects
+        userSocketMap[userId] = socket.id;        
         io.emit("getOnlineUsers", Object.keys(userSocketMap));
     }
 
     socket.on("disconnect", () => {
         console.log("User disconnected:", socket.id);
-        // Find and remove the disconnected user
         const disconnectedUserId = Object.keys(userSocketMap).find(
             key => userSocketMap[key] === socket.id
         );

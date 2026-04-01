@@ -20,6 +20,13 @@ const messageSchema = new mongoose.Schema({
     },
     {timestamps: true}
 );
+
+// Compound index: speeds up fetching messages between two users sorted by time
+messageSchema.index({ senderId: 1, receiverId: 1, createdAt: -1 });
+
+// Text index: enables full-text search on message content
+messageSchema.index({ text: "text" });
+
 const Message = mongoose.model("Message ", messageSchema);
 
 export default Message;
